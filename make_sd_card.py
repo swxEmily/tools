@@ -372,11 +372,11 @@ def process_internet_installation(dev_name, ascend_version):
 
 def print_usage():
     print("Usage: ")
-    print("\t[internet]: python3 sd_card_making.py internet [SD Name]")
+    print("\t[internet]: python3 make_sd_card.py internet [SD Name]")
     print("\t                 Use latest version to make SD card.")
-    print("\t[internet]: python3 sd_card_making.py internet [SD Name] [Version]")
+    print("\t[internet]: python3 make_sd_card.py internet [SD Name] [Version]")
     print("\t                 Use given version to make SD card.")
-    print("\t[local   ]: python3 sd_card_making.py local [SD Name]")
+    print("\t[local   ]: python3 make_sd_card.py local [SD Name]")
     print("\t                 Use local given packages to make SD card.")
 
 
