@@ -177,7 +177,14 @@ def main():
         atlasdk_ssh_port = "22"
         
     print("[Step] Install system dependency packages...")
-    execute("apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu")
+    ret = execute("apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu")
+    if not ret[0]:
+        print("ERROR: Install system dependency packages failed, please check your network.")
+        tips = "If you make sure you have installed gcc-aarch64-linux-gnu g++-aarch64-linux-gnu,\nplease input Y to confirm, others to exit:"
+        confirm = input(tips)
+        
+        if confirm != "Y" and confirm != "y":
+            exit(-1)
     
     print("[Step] Pack sysroot...")
     now_time = datetime.datetime.now().strftime('ui_cross_%Y%m%d%H%M%S')
