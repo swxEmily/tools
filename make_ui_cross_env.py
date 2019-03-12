@@ -97,7 +97,7 @@ def sftp_to_remote(user, ip, port, password, cmd_list):
     cmd = "sftp -P {port} {user}@{ip} ".format(ip=ip, port=port, user=user)
     print(cmd)
     try:
-        process = pexpect.spawn(cmd)
+        process = pexpect.spawn(cmd, timeout=300)
         ret = process.expect(
             ["password", "Are you sure you want to continue connecting"])
         if ret == 1:
@@ -128,7 +128,7 @@ def ssh_to_remote(user, ip, port, password, cmd_list):
     cmd = "ssh -p {port} {user}@{ip} ".format(ip=ip, port=port, user=user)
     print(cmd)
     try:
-        process = pexpect.spawn(cmd)
+        process = pexpect.spawn(cmd, timeout=300)
         ret = process.expect(
             ["password", "Are you sure you want to continue connecting"])
         if ret == 1:
@@ -175,7 +175,11 @@ def main():
         "Please input Atlas DK Development Board SSH port(default: 22):")
     if atlasdk_ssh_port == "":
         atlasdk_ssh_port = "22"
-
+        
+    print("[Step] Install system dependency packages...")
+    execute("apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu")
+    
+    print("[Step] Pack sysroot...")
     now_time = datetime.datetime.now().strftime('ui_cross_%Y%m%d%H%M%S')
     command_list = [{"type": "cmd",
                      "value": "mkdir -p ./{path}/sysroot".format(path=now_time),
@@ -190,12 +194,18 @@ def main():
                     {"type": "cmd",
                      "value": "cp -rdp --parents /usr/lib ./{path}/sysroot".format(path=now_time),
                      "secure": False},
+                    {"type": "expect",
+                     "value": PROMPT},
                     {"type": "cmd",
                      "value": "cp -rdp --parents /lib ./{path}/sysroot".format(path=now_time),
                      "secure": False},
+                    {"type": "expect",
+                     "value": PROMPT},
                     {"type": "cmd",
                      "value": "cd ./{path}".format(path=now_time),
                      "secure": False},
+                    {"type": "expect",
+                     "value": PROMPT},
                     {"type": "cmd",
                      "value": "tar -zcvf ~/sysroot.tar.gz ./sysroot",
                      "secure": False},
@@ -212,20 +222,29 @@ def main():
     if not ret:
         print("Pack sysroot.tar.gz failed.")
         exit(-1)
+    
+    print("[Step] Download sysroot package...")
     ret = sftp_to_remote(atlasdk_ssh_user, atlasdk_ip, atlasdk_ssh_port, atlasdk_ssh_pwd, [{"type": "cmd",
                                                                                             "value": "get sysroot.tar.gz",
+                                                                                            "secure": False},
+                                                                                           {"type": "expect",
+                                                                                            "value": PROMPT},
+                                                                                           {"type": "cmd",
+                                                                                            "value": "rm sysroot.tar.gz",
                                                                                             "secure": False},
                                                                                            {"type": "expect",
                                                                                             "value": PROMPT}])
     if not ret:
         print("Download sysroot.tar.gz failed.")
         exit(-1)
+    print("[Step] Configure UI Cross Compilation environment...")
     execute("tar -zxvf sysroot.tar.gz")
-    execute("make -p /usr/lib/aarch64-linux-gnu")
+    execute("mkdir -p /usr/lib/aarch64-linux-gnu")
     execute("cp -rdp ./sysroot/usr/include /usr/aarch64-linux-gnu/")
     execute("cp -rdp ./sysroot/usr/lib/aarch64-linux-gnu/* /usr/lib/aarch64-linux-gnu")
     execute("cp -rdp ./sysroot/lib/aarch64-linux-gnu /lib/")
     execute("ln -s /lib/aarch64-linux-gnu/libz.so.1 /usr/lib/aarch64-linux-gnu/libz.so")
+    execute("rm -rf sysroot*")
     print("Configure cross compilation environment successfully.")
     exit(0)
 
