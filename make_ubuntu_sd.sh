@@ -173,7 +173,7 @@ apt-get install dmidecode -y
 mv /etc/apt/sources.list.bak /etc/apt/sources.list
 
 # 2. set username
-useradd -m \${username} -d /home/\${username}
+useradd -m \${username} -d /home/\${username} -s /bin/bash
 sed -i \"/^\${username}:/c\\\\\${password}\" /etc/shadow
 sed -i \"/^root:/c\\\\\${root_pwd}\" /etc/shadow
 
