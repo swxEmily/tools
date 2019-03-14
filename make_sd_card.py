@@ -246,7 +246,7 @@ def process_local_installation(dev_name):
         "Please input Y: continue, other to install them:"
     confirm = input(confirm_tips)
 
-    if confirm != "Y" or confirm != "y":
+    if confirm != "Y" and confirm != "y":
         return False
     execute("rm -rf {path}_log/*".format(path=SD_CARD_MAKING_PATH))
     execute("mkdir -p {path}_log".format(path=SD_CARD_MAKING_PATH))
