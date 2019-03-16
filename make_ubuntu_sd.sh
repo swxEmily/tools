@@ -277,7 +277,7 @@ n
 
 
     w" | fdisk ${DEV_NAME}
-
+    partprobe
     echo "y
     " | mkfs.ext3 -L ubuntu_fs ${DEV_NAME}1
     if [[ $? -ne 0 ]];then
