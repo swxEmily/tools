@@ -278,11 +278,11 @@ n
 
     w" | fdisk ${DEV_NAME}
 
-	partprobe
+    partprobe
 
-	fdisk -l
+    fdisk -l
 
-	sleep 5
+    sleep 5
 
     echo "y
     " | mkfs.ext3 -L ubuntu_fs ${DEV_NAME}1
