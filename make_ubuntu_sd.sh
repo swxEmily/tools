@@ -248,7 +248,7 @@ exit
 # ******************************************************************************
 function formatSDcard()
 {
-    if [[ $(ls -1 ${DEV_NAME}* 2>/dev/null | wc -l) -gt 1 ]];then
+    if [[ $(fdisk -l 2>/dev/null | grep "^${DEV_NAME}" | wc -l) -gt 1 ]];then
 	for i in $(ls -1 ${DEV_NAME}*); do
             echo "d
 
@@ -277,7 +277,13 @@ n
 
 
     w" | fdisk ${DEV_NAME}
-    partprobe
+
+	partprobe
+
+	fdisk -l
+
+	sleep 5
+
     echo "y
     " | mkfs.ext3 -L ubuntu_fs ${DEV_NAME}1
     if [[ $? -ne 0 ]];then
