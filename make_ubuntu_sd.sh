@@ -249,7 +249,7 @@ exit
 function formatSDcard()
 {
     if [[ $(fdisk -l 2>/dev/null | grep "^${DEV_NAME}" | wc -l) -gt 1 ]];then
-	for i in $(fdisk -l 2>/dev/null | grep "^${DEV_NAME}"); do
+	for i in $(fdisk -l 2>/dev/null | grep "^${DEV_NAME}" | awk -F '' '{print $1}'); do
             echo "d
 
 	    w" | fdisk ${DEV_NAME}
