@@ -161,7 +161,7 @@ def execute_wget(cmd, timeout=86400, cwd=None):
 
 def check_sd(dev_name):
     ret, disk = execute(
-        "fdisk -l | grep \"Disk {dev_name}:\"".format(dev_name=dev_name))
+        "fdisk -l 2>/dev/null | grep \"Disk {dev_name}:\"".format(dev_name=dev_name))
 
     if not ret or len(disk) > 1:
         print(
@@ -245,9 +245,11 @@ def process_local_installation(dev_name):
         "\n\t apt-get install -y qemu-user-static binfmt-support gcc-aarch64-linux-gnu g++-aarch64-linux-gnu\n" + \
         "Please input Y: continue, other to install them:"
     confirm = input(confirm_tips)
+    confirim = confirm.strip()
 
     if confirm != "Y" and confirm != "y":
         return False
+
     execute("rm -rf {path}_log/*".format(path=SD_CARD_MAKING_PATH))
     execute("mkdir -p {path}_log".format(path=SD_CARD_MAKING_PATH))
     log_path = "{path}_log".format(path=SD_CARD_MAKING_PATH)
