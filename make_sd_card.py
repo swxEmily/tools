@@ -245,7 +245,7 @@ def process_local_installation(dev_name):
         "\n\t apt-get install -y qemu-user-static binfmt-support gcc-aarch64-linux-gnu g++-aarch64-linux-gnu\n" + \
         "Please input Y: continue, other to install them:"
     confirm = input(confirm_tips)
-    confirim = confirm.strip()
+    confirm = confirm.strip()
 
     if confirm != "Y" and confirm != "y":
         return False
