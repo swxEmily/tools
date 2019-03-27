@@ -39,8 +39,8 @@ import time
 import yaml
 import sys
 
-# ssh expect prompt
-PROMPT = ['# ', '>>> ', '> ', '\$ ']
+NETWORK_CARD_DEFAULT_IP="192.168.0.2"
+USB_CARD_DEFAULT_IP="192.168.1.2"
 
 VERSION_INFO_URL = "https://raw.githubusercontent.com/Ascend/tools/master/versioninfo.yaml"
 
@@ -53,6 +53,7 @@ MIN_DISK_SIZE = 8 * 1024 * 1024 * 1024
 
 MAKING_SD_CARD_COMMAND = "bash {path}/make_ubuntu_sd.sh " + " {dev_name}" + \
     " {pkg_path} {ubuntu_file_name} {ascend_developerkit_file_name}" + \
+    + " " + NETWORK_CARD_DEFAULT_IP + " " + USB_CARD_DEFAULT_IP + \
     " > {log_path}/make_ubuntu_sd.log "
 
 
