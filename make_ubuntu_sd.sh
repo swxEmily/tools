@@ -214,7 +214,7 @@ test -e status || touch status
 head -l status > status.clean
 sed 's/"//g' status | while read logfile date
 do
-    [ -e "${logfile}" ] && echo "\"${logfile}\" ${date}"
+    [ -e "\${logfile}" ] && echo "\"\${logfile}\" \${date}"
 done >> status.clean
 
 test -x /usr/sbin/logrotate || exit 0
