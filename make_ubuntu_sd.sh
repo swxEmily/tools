@@ -199,7 +199,7 @@ function ubuntufsExtract()
 function configure_syslog_and_kernlog()
 {
     if [ ! -d ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR} ];then
-        mkir -p ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}
+        mkdir -p ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}
     fi
     
     echo "" > ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate
