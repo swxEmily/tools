@@ -218,7 +218,7 @@ do
 done >> status.clean
 
 test -x /usr/sbin/logrotate || exit 0
-/usr/sbin/logrotate ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate.conf
+/usr/sbin/logrotate ${MINIRC_LOGROTATE_DIR}minirc_logrotate.conf
 EOF
 
     cat > ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate.conf << EOF
