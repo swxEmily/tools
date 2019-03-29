@@ -69,13 +69,13 @@ netmask 255.255.255.0" >> /etc/network/interfaces
 
 usage()
 {
-    echo "*****************************************************************"
+    echo "*********************************************************************************************************"
     echo "* Usage :"
     echo "* ./configure_usb_ethernet.sh .............    ..: configure usb by default ip: 192.168.1.166"
     echo "* ./configure_usb_ethernet.sh -s ip              : set usb with given ip"
     echo "* ./configure_usb_ethernet.sh -s usb_ethernet ip : if more than one usb name, set with usb name and ip"
     echo "* ./configure_usb_ethernet.sh -h|-help           : print help message"
-    echo "*****************************************************************"
+    echo "*********************************************************************************************************"
 
     exit 1
 }
