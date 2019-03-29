@@ -37,6 +37,9 @@ DEV_NAME=$1
 ISO_FILE_DIR=$2
 ISO_FILE=$3
 RUN_MINI=$4
+NETWORK_CARD_DEFAULT_IP=$5
+USB_CARD_DEFAULT_IP=$6
+
 LogPath=${ScriptPath}"sd_card_making_log/"
 TMPDIR_SD_MOUNT=${LogPath}"sd_mount_dir"
 TMPDIR_SD2_MOUNT=${LogPath}"sd_mount_dir2"
@@ -46,6 +49,12 @@ TMPDIR_DATE=${LogPath}"no_touch_make_sd_dir"
 USER_NAME="HwHiAiUser"
 USER_PWD="HwHiAiUser:\$6\$klSpdQ1K\$4Gm/7HxehX.YSum4Wf3IDFZ3v5L.clybUpGNGaw9zAh3rqzqB4mWbxvSTFcvhbjY/6.tlgHhWsbtbAVNR9TSI/:17795:0:99999:7:::"
 ROOT_PWD="root:\$6\$klSpdQ1K\$4Gm/7HxehX.YSum4Wf3IDFZ3v5L.clybUpGNGaw9zAh3rqzqB4mWbxvSTFcvhbjY/6.tlgHhWsbtbAVNR9TSI/:17795:0:99999:7:::"
+
+MINIRC_LOGROTATE_DIR="/etc/crob.minirc/"
+SYSLOG_MAXSIZE="1000M"
+SYSLOG_ROTATE="4"
+KERNLOG_MAXSIZE="1000M"
+KERNLOG_ROTATE="4"
 # end
 
 # ************************Cleanup*********************************************
@@ -71,7 +80,7 @@ function filesClean()
     fi
     rm -rf ${TMPDIR_SD_MOUNT}
     df -h | grep "${TMPDIR_SD2_MOUNT}"
-    if [ $? -eq 0 ];then    
+    if [ $? -eq 0 ];then
         umount ${TMPDIR_SD2_MOUNT}
     fi
     rm -rf ${TMPDIR_SD2_MOUNT}
@@ -83,6 +92,58 @@ function filesClean()
     rm -rf ${LogPath}mini_developerkit
 }
 #end
+# ************************check ip****************************************
+# Description:  check ip valid or not
+# $1: ip
+# ******************************************************************************
+function checkIpAddr()
+{
+    ip_addr=$1
+    echo ${ip_addr} | grep "^[0-9]\{1,3\}\.\([0-9]\{1,3\}\.\)\{2\}[0-9]\{1,3\}$" > /dev/null
+    if [ $? -ne 0 ]
+    then
+        return 1
+    fi
+
+    for num in `echo ${ip_addr} | sed "s/./ /g"`
+    do
+        if [ $num -gt 255 ] || [ $num -lt 0 ]
+        then
+            return 1
+        fi
+   done
+   return 0
+}
+
+# **************check network card and usb card ip******************************
+# Description:  check network card and usb card ip
+# ******************************************************************************
+function checkIps()
+{
+    if [[ ${NETWORK_CARD_DEFAULT_IP}"X" == "X" ]];then
+        NETWORK_CARD_DEFAULT_IP="192.168.0.2"
+    fi
+
+    checkIpAddr ${NETWORK_CARD_DEFAULT_IP}
+    if [ $? -ne 0 ];then
+        echo "Failed: Invalid network card ip."
+        return 1
+    fi
+    NETWORK_CARD_GATEWAY=`echo ${NETWORK_CARD_DEFAULT_IP} | sed -r 's/([0-9]+\.[0-9]+\.[0-9]+)\.[0-9]+/\1.1/g'`
+
+
+    if [[ ${USB_CARD_DEFAULT_IP}"X" == "X" ]];then
+        USB_CARD_DEFAULT_IP="192.168.1.2"
+    fi
+
+    checkIpAddr ${USB_CARD_DEFAULT_IP}
+    if [ $? -ne 0 ];then
+        echo "Failed: Invalid usb card ip."
+        return 1
+    fi
+    return 0
+}
+
 
 # ************************umount SD Card****************************************
 # Description:  check sd card mount, if mounted, umount it
@@ -130,6 +191,74 @@ function ubuntufsExtract()
     return 0
 }
 # end
+
+
+# *****************configure syslog and kernlog**************************************
+# Description:  configure syslog and kernlog
+# ******************************************************************************
+function configure_syslog_and_kernlog()
+{
+    if [ ! -d ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR} ];then
+        mkdir -p ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}
+    fi
+    
+    echo "" > ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate
+    echo "" > ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate.conf
+    
+    cat > ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate << EOF
+#!/bin/bash
+
+#Clean non existent log file entries from status file
+cd /var/lib/logrotate
+test -e status || touch status
+head -1 status > status.clean
+sed 's/"//g' status | while read logfile date
+do
+    [ -e "\${logfile}" ] && echo "\"\${logfile}\" \${date}"
+done >> status.clean
+
+test -x /usr/sbin/logrotate || exit 0
+/usr/sbin/logrotate ${MINIRC_LOGROTATE_DIR}minirc_logrotate.conf
+EOF
+
+    cat > ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate.conf << EOF
+# see "main logrotate" for details
+
+# use the syslog group by default, since this is the owing group
+# of /var/log/syslog.
+su root syslog
+
+# create new (empty) log files after rotating old ones
+create
+/var/log/syslog
+{
+        rotate ${SYSLOG_ROTATE}
+        weekly
+        maxsize ${SYSLOG_MAXSIZE}
+        missingok
+        notifempty
+        compress
+        postrotate
+                invoke-rc.d rsyslog rotate > /dev/null
+        endscript
+}
+/var/log/kern.log
+{
+        rotate ${SYSLOG_ROTATE}
+        weekly
+        maxsize ${SYSLOG_MAXSIZE}
+        missingok
+        notifempty
+        compress
+}
+EOF
+
+    echo "*/30 *   * * *   root     cd / && run-parts --report ${MINIRC_LOGROTATE_DIR}" >> ${LogPath}squashfs-root/etc/crontab
+    
+    if [ -f ${LogPath}squashfs-root/etc/rsyslog.d/50-default.conf ];then
+        sed -i 's/*.*;auth,authpriv.none/*.*;auth,authpriv,kern.none/g' ${LogPath}squashfs-root/etc/rsyslog.d/50-default.conf
+    fi
+}
 
 
 # ************************Configure ubuntu**************************************
@@ -189,13 +318,13 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet static
-address 192.168.0.2
+address ${NETWORK_CARD_DEFAULT_IP}
 netmask 255.255.255.0
-gateway 192.168.0.1
+gateway ${NETWORK_CARD_GATEWAY}
 
 auto usb0
 iface usb0 inet static
-address 192.168.1.2
+address ${USB_CARD_DEFAULT_IP}
 netmask 255.255.255.0
 \" > /etc/network/interfaces
 
@@ -235,6 +364,9 @@ exit
         echo "Failed: qemu is broken or the version of qemu is not compatible!"
         return 1;
     fi
+
+    #configure syslog and kern log
+    configure_syslog_and_kernlog
 
     umount ${LogPath}squashfs-root/cdtmp
     rm -rf ${LogPath}squashfs-root/cdtmp
@@ -315,7 +447,7 @@ function copyFilesToSDcard()
 {
     # 1. copy third party file
     mkdir -p ${LogPath}squashfs-root/opt/mini
-    chmod 755 ${LogPath}squashfs-root/opt/mini 
+    chmod 755 ${LogPath}squashfs-root/opt/mini
     unzip ${ISO_FILE_DIR}/${RUN_MINI} mini_developerkit/scripts/minirc_install_phase1.sh -d ${LogPath}
     cp ${LogPath}mini_developerkit/scripts/minirc_install_phase1.sh ${LogPath}squashfs-root/opt/mini/
     if [[ $? -ne 0 ]];then
@@ -380,7 +512,7 @@ function copyFilesToSDcard()
 # ************************Make sysroot**************************************
 # Description:  copy aarch64 gnu libs
 # ******************************************************************************
-make_sysroot()
+function make_sysroot()
 {
     if [ ! -d /usr/aarch64-linux-gnu/ ]; then
         mkdir -p /usr/aarch64-linux-gnu/
@@ -398,13 +530,18 @@ make_sysroot()
 
 # ########################Begin Executing######################################
 # ************************Check args*******************************************
-main()
+function main()
 {
-    if [[ $# -ne 4 ]];then
+    if [[ $# -lt 4 ]];then
         echo "Failed: Number of parameter illegal! Usage: $0 <dev fullname> <img path> <iso fullname> <mini filename>"
         return 1;
     fi
 
+    # ***************check network and usb card ip**********************************
+    checkIps
+    if [ $? -ne 0 ];then
+        return 1
+    fi
     # ************************umount dev_name***************************************
     checkSDCard
     if [ $? -ne 0 ];then
@@ -432,7 +569,7 @@ main()
     # end
 
     # ************************Configure ubuntu**************************************
-    echo "Process: 1/3(Configure ubuntu filesystem)"
+    echo "Process: 1/4(Configure ubuntu filesystem)"
     configUbuntu
     if [ $? -ne 0 ];then
         return 1
@@ -475,7 +612,7 @@ main()
         return 1
     fi
     # end
-    
+
     echo "Process: 4/4(Make sysroot)"
     make_sysroot
     umount ${TMPDIR_SD_MOUNT} 2>/dev/null
@@ -483,6 +620,8 @@ main()
         echo "Failed: Umount ${TMPDIR_SD_MOUNT} to SDcard failed!"
         return 1
     fi
+    
+    
 
     umount ${TMPDIR_SD2_MOUNT} 2>/dev/null
     if [[ $? -ne 0 ]];then
