@@ -252,6 +252,7 @@ create
         compress
 }
 EOF
+    chmod 755 ${LogPath}squashfs-root/${MINIRC_LOGROTATE_DIR}minirc_logrotate
 
     echo "*/30 *   * * *   root     cd / && run-parts --report ${MINIRC_LOGROTATE_DIR}" >> ${LogPath}squashfs-root/etc/crontab
     
