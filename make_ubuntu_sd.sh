@@ -298,6 +298,7 @@ apt-get install libelf1 -y
 apt-get install libpython2.7 -y
 apt-get install libnuma1 -y
 apt-get install dmidecode -y
+apt-get install rsync -y
 
 mv /etc/apt/sources.list.bak /etc/apt/sources.list
 
